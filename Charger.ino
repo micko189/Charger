@@ -27,8 +27,10 @@
 #include <math.h>
 
 #define ThermistorPIN 0                 // Analog Pin 0
+#define ChargePIN 1
+#define FastChargePIN 2
+#define VoltagePIN 3					// Analog Pin 3
 
-float vcc = 4.91;                       // only used for display purposes, if used set to the measured Vcc.
 float pad = 9850;                       // balance/pad resistor value, set this to  the measured resistance of your pad resistor
 float thermr = 10000;                   // thermistor nominal resistance
 
@@ -36,7 +38,16 @@ float thermr = 10000;                   // thermistor nominal resistance
 
 int samples[NUMSAMPLES];
 
-float Thermistor(int RawADC) {
+#define FAST_CHARGE 0
+#define NORMAL_CHARGE 1
+
+byte chargingMode = FAST_CHARGE;
+
+bool bateryPresent = false;
+
+unsigned long current_time_milis;
+
+float Thermistor(float RawADC) {
 	long Resistance;
 	float Temp;  // Dual-Purpose variable to save space.
 
@@ -48,9 +59,6 @@ float Thermistor(int RawADC) {
 	// BEGIN- Remove these lines for the function not to display anything
 	//Serial.print("ADC: "); 
 	//Serial.print(RawADC); 
-	//Serial.print("/1024");                           // Print out RAW ADC Number
-	//Serial.print(", vcc: ");
-	//Serial.print(vcc,2);
 	//Serial.print(", pad: ");
 	//Serial.print(pad/1000,3);
 	//Serial.print(" Kohms, Volts: "); 
@@ -60,16 +68,17 @@ float Thermistor(int RawADC) {
 	//Serial.print(" ohms, ");
 	// END- Remove these lines for the function not to display anything
 
-	// Uncomment this line for the function to return Fahrenheit instead.
-	//temp = (Temp * 9.0)/ 5.0 + 32.0;                  // Convert to Fahrenheit
 	return Temp;                                      // Return the Temperature
 }
 
 void setup()
 {
-
-	/* add setup code here */
 	Serial.begin(9600);
+	pinMode(ChargePIN, OUTPUT);
+	pinMode(FastChargePIN, OUTPUT);
+
+	digitalWrite(ChargePIN, LOW);
+	digitalWrite(FastChargePIN, LOW);
 }
 
 float analogReadAvg(uint8_t pin)
@@ -94,24 +103,50 @@ float analogReadAvg(uint8_t pin)
 	return average;
 }
 
-float getVoltage(float sensorValue)
+float Voltage(float RawADC)
 {
-	return sensorValue * (5.0 / 1023.0);
+	return RawADC * (5.0 / 1023.0);
 }
 
 void loop()
 {
+	float temp = Thermistor(analogReadAvg(ThermistorPIN));      
 
-	/* add main program code here */
-
-
-	float temp;
-	temp = Thermistor(analogReadAvg(ThermistorPIN));       // read ADC and  convert it to Celsius
 	Serial.print("Celsius: ");
-	Serial.print(temp, 1);                             // display Celsius
-	//temp = (temp * 9.0)/ 5.0 + 32.0;                  // converts to  Fahrenheit
-	//Serial.print(", Fahrenheit: "); 
-	//Serial.print(temp,1);                             // display  Fahrenheit
+	Serial.print(temp, 2);                             // display Celsius
 	Serial.println("");
-	delay(5000);                                      // Delay a bit... 
+
+	float voltage = Voltage(analogReadAvg(VoltagePIN));
+
+	Serial.print("Voltage: ");
+	Serial.print(voltage, 2);                             // display Celsius
+	Serial.println("");
+
+	if (bateryPresent == false && voltage > 0.1)
+	{
+		bateryPresent = true;
+		// Update clock time
+		current_time_milis = millis();
+	}
+	else
+	{
+		bateryPresent = false;
+	}
+
+	if (bateryPresent)
+	{
+		if (voltage > 2.8)
+		{
+			chargingMode = NORMAL_CHARGE;
+		}
+		else
+		{
+			chargingMode = FAST_CHARGE;
+		}
+
+		// begin charge
+	}
+
+	delay(1000);                                      // Delay a bit... 
 }
+
