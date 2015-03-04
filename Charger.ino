@@ -10,8 +10,8 @@
 *
 * Schematic:
 *   [Ground] -- [10k-pad-resistor] -- | -- [thermistor] --[Vcc (5 or 3.3v)]
-*                                               |
-*                                          Analog Pin 0
+*                                     |
+*                                Analog Pin 0
 *
 * In case it isn't obvious (as it wasn't to me until I thought about it), the analog ports
 * measure the voltage between 0v -> Vcc which for an Arduino is a nominal 5v, but for (say)
@@ -20,10 +20,7 @@
 * The resistance calculation uses the ratio of the two resistors, so the voltage
 * specified above is really only required for the debugging that is commented out below
 *
-* Resistance = PadResistor * (1024/ADC -1)
-*
-* I have used this successfully with some CH Pipe Sensors (http://www.atcsemitec.co.uk/pdfdocs/ch.pdf)
-* which be obtained from http://www.rapidonline.co.uk.
+* Resistance = PadResistor * (1023/ADC -1)
 *
 */
 
@@ -31,17 +28,19 @@
 
 #define ThermistorPIN 0                 // Analog Pin 0
 
-float vcc = 4.91;                       // only used for display purposes, if used
-// set to the measured Vcc.
-float pad = 9850;                       // balance/pad resistor value, set this to
-// the measured resistance of your pad resistor
+float vcc = 4.91;                       // only used for display purposes, if used set to the measured Vcc.
+float pad = 9850;                       // balance/pad resistor value, set this to  the measured resistance of your pad resistor
 float thermr = 10000;                   // thermistor nominal resistance
+
+#define NUMSAMPLES 5
+
+int samples[NUMSAMPLES];
 
 float Thermistor(int RawADC) {
 	long Resistance;
 	float Temp;  // Dual-Purpose variable to save space.
 
-	Resistance = pad*((1024.0 / RawADC) - 1);
+	Resistance = pad * ((1023.0 / RawADC) - 1);
 	Temp = log(Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
 	Temp = 1 / (0.001129148 + (0.000234125 * Temp) + (0.0000000876741 * Temp * Temp * Temp));
 	Temp = Temp - 273.15;  // Convert Kelvin to Celsius                      
@@ -73,13 +72,41 @@ void setup()
 	Serial.begin(9600);
 }
 
+float analogReadAvg(uint8_t pin)
+{
+	uint8_t i;
+	float average;
+
+	// take N samples in a row, with a slight delay
+	for (i = 0; i < NUMSAMPLES; i++) {
+		samples[i] = analogRead(ThermistorPIN);
+		delay(10);
+	}
+
+	// average all the samples out
+	average = 0;
+	for (i = 0; i < NUMSAMPLES; i++) {
+		average += samples[i];
+	}
+
+	average /= NUMSAMPLES;
+
+	return average;
+}
+
+float getVoltage(float sensorValue)
+{
+	return sensorValue * (5.0 / 1023.0);
+}
+
 void loop()
 {
 
 	/* add main program code here */
 
+
 	float temp;
-	temp = Thermistor(analogRead(ThermistorPIN));       // read ADC and  convert it to Celsius
+	temp = Thermistor(analogReadAvg(ThermistorPIN));       // read ADC and  convert it to Celsius
 	Serial.print("Celsius: ");
 	Serial.print(temp, 1);                             // display Celsius
 	//temp = (temp * 9.0)/ 5.0 + 32.0;                  // converts to  Fahrenheit
@@ -87,5 +114,4 @@ void loop()
 	//Serial.print(temp,1);                             // display  Fahrenheit
 	Serial.println("");
 	delay(5000);                                      // Delay a bit... 
-
 }
