@@ -145,6 +145,16 @@ void loop()
 		}
 
 		// begin charge
+		digitalWrite(ChargePIN, HIGH);
+
+		if (chargingMode == FAST_CHARGE)
+		{
+			digitalWrite(FastChargePIN, HIGH);
+		}
+		else
+		{
+			digitalWrite(FastChargePIN, LOW);
+		}
 	}
 
 	delay(1000);                                      // Delay a bit... 
