@@ -23,12 +23,14 @@ void delay(unsigned long t)
 	Sleep(t);
 }
 
-byte pins[10] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-unsigned long lastPinChange[10] = { 0 };
+byte pins[10] = { 0 };
 
 void pinMode(uint8_t, uint8_t){}
 
-void digitalWrite(uint8_t, uint8_t){}
+void digitalWrite(uint8_t pin, uint8_t val)
+{
+	pins[pin] = val;
+}
 
 int digitalRead(uint8_t pin)
 {
@@ -37,9 +39,15 @@ int digitalRead(uint8_t pin)
 
 int apins[10] = { 0 };
 
-int analogRead(uint8_t pin){ return apins[pin]; }
+int analogRead(uint8_t pin)
+{
+	return apins[pin];
+}
 
-void analogWrite(uint8_t pin, int val){ apins[pin] = val; }
+void analogWrite(uint8_t pin, int val)
+{
+	apins[pin] = val;
+}
 
 #include "Charger.ino"
 
@@ -55,10 +63,38 @@ void main()
 {
 	setup();
 	analogWrite(ThermistorPIN, 600);
-	analogWrite(VoltagePIN, 600);
+	analogWrite(VoltagePIN, 0);
+
+	int cnt = 0;
+
+	int startVol = 500;
+
 	for (;;)
 	{
+		printf("Seconds elapsed: %ds\n", cnt);
+		
+		
+		if (cnt >= 4)
+		{
+			analogWrite(VoltagePIN, startVol);
+		}
+
 		loop();
+
+		if (digitalRead(ChargePIN))
+		{
+			startVol++;
+		}
+
+		if (digitalRead(FastChargePIN))
+		{
+			startVol++;
+		}
+
+		printf("Bat pres: %d, charging: %d, fast: %d \n", bateryPresent, digitalRead(ChargePIN), digitalRead(FastChargePIN));
+
 		GotoXY(0, 0);
+
+		cnt++;
 	}
 }

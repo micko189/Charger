@@ -88,7 +88,7 @@ float analogReadAvg(uint8_t pin)
 
 	// take N samples in a row, with a slight delay
 	for (i = 0; i < NUMSAMPLES; i++) {
-		samples[i] = analogRead(ThermistorPIN);
+		samples[i] = analogRead(pin);
 		delay(10);
 	}
 
@@ -122,13 +122,13 @@ void loop()
 	Serial.print(voltage, 2);                             // display Celsius
 	Serial.println("");
 
-	if (bateryPresent == false && voltage > 0.1)
+	if (bateryPresent == false && voltage > 0.5)
 	{
 		bateryPresent = true;
 		// Update clock time
 		current_time_milis = millis();
 	}
-	else
+	else if(bateryPresent == true && voltage  < 0.5)
 	{
 		bateryPresent = false;
 	}
@@ -144,8 +144,16 @@ void loop()
 			chargingMode = FAST_CHARGE;
 		}
 
-		// begin charge
-		digitalWrite(ChargePIN, HIGH);
+		if (voltage < 2.9)
+		{
+			// begin charge
+			digitalWrite(ChargePIN, HIGH);
+		}
+		else
+		{
+			// done charging
+			digitalWrite(ChargePIN, LOW);
+		}
 
 		if (chargingMode == FAST_CHARGE)
 		{
