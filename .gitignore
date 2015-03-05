@@ -47,3 +47,10 @@ Visual Micro/Compile.vmps.xml
 Visual Micro/.Charger.vsarduino.h
 Charger.v12.suo
 Charger.sdf
+*.exe
+*.ilk
+*.pdb
+*.obj
+*.log
+*.tlog
+*.idb
