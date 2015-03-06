@@ -13,6 +13,8 @@
 
 #include <math.h>
 
+#define NUMBER_OF_CELLS 2
+
 #define ChargePIN 1						// Digital Pin 1
 #define FastChargePIN 2					// Digital Pin 2
 #define ThermistorPIN 0                 // Analog Pin 0
@@ -144,7 +146,7 @@ void loop()
 		}
 
 		if (elapsed_time_milis > 10 * 60 * 60 * 1000 ||	// More than 10 hours is elapsed
-			voltage > 2.9 ||							// Voltage is more than 1.45V per cell
+			voltage > NUMBER_OF_CELLS * 1.45 ||			// Voltage is more than 1.45V per cell
 			temperature > 45.0 ||						// Temperature of cells is more than 45°C
 			(maxVoltage - voltage) > 0.030				// We have voltage drop of more than 0.030V (30mV)
 			)
@@ -174,7 +176,7 @@ void loop()
 			chargingEnded = false;
 
 			// If voltage is less than 1.4V per cell charge with C/5, if not charge with C/10
-			if (voltage > 2.8)
+			if (voltage > NUMBER_OF_CELLS * 1.4)
 			{
 				chargingMode = NORMAL_CHARGE;
 			}
