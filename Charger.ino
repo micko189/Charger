@@ -1,26 +1,13 @@
 /*
 * Inputs ADC Value from Thermistor and outputs Temperature in Celsius
-*  requires: include <math.h>
 * Utilizes the Steinhart-Hart Thermistor Equation:
 *    Temperature in Kelvin = 1 / {A + B[ln(R)] + C[ln(R)]3}
 *    where A = 0.001129148, B = 0.000234125 and C = 8.76741E-08
-*
-* These coefficients seem to work fairly universally, which is a bit of a
-* surprise.
 *
 * Schematic:
 *   [Ground] -- [10k-pad-resistor] -- | -- [thermistor] --[Vcc (5 or 3.3v)]
 *                                     |
 *                                Analog Pin 0
-*
-* In case it isn't obvious (as it wasn't to me until I thought about it), the analog ports
-* measure the voltage between 0v -> Vcc which for an Arduino is a nominal 5v, but for (say)
-* a JeeNode, is a nominal 3.3v.
-*
-* The resistance calculation uses the ratio of the two resistors, so the voltage
-* specified above is really only required for the debugging that is commented out below
-*
-* Resistance = PadResistor * (1023/ADC -1)
 *
 */
 
@@ -97,11 +84,11 @@ float analogReadAvg(uint8_t pin)
 /// <param name="RawADC">The raw analog value.</param>
 /// <returns></returns>
 float Thermistor(float RawADC) {
-	long Resistance;
+	float Resistance;
 	float Temp;  // Dual-Purpose variable to save space.
 
 	Resistance = pad * ((1023.0 / RawADC) - 1);
-	Temp = log((float)Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
+	Temp = log(Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
 	Temp = 1 / (0.001129148 + (0.000234125 * Temp) + (0.0000000876741 * Temp * Temp * Temp));
 	Temp = Temp - 273.15;  // Convert Kelvin to Celsius                      
 
