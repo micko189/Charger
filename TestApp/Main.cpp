@@ -75,7 +75,7 @@ void main()
 	for (;;)
 	{
 		printf("Seconds elapsed: %ds\n", cnt);
-		
+
 		if (cnt >= 4)
 		{
 			analogWrite(VoltagePIN, startVol);
