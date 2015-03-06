@@ -15,6 +15,10 @@ public:
 	{
 		printf("%d", i);
 	}
+	void print(char c)
+	{
+		printf("%c", c);
+	}
 	void print(float f, int i)
 	{
 		char format[] = "%. f";
