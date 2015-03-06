@@ -45,7 +45,9 @@ byte chargingMode = FAST_CHARGE;
 
 bool bateryPresent = false;
 
-unsigned long start_time_milis;
+float maxVoltage = 0;
+
+unsigned long start_time_milis = 0;
 
 float Thermistor(float RawADC) {
 	long Resistance;
@@ -110,11 +112,11 @@ float Voltage(float RawADC)
 
 void loop()
 {
-	float temperature = Thermistor(analogReadAvg(ThermistorPIN));      
+	float temperature = Thermistor(analogReadAvg(ThermistorPIN));
 
 	Serial.print("Celsius: ");
 	Serial.print(temperature, 2);                             // display Celsius
-	Serial.println("°C");
+	Serial.println("C");
 
 	float voltage = Voltage(analogReadAvg(VoltagePIN));
 
@@ -122,13 +124,18 @@ void loop()
 	Serial.print(voltage, 3);                             // display Celsius
 	Serial.println("V");
 
+	if (voltage > maxVoltage )
+	{
+		maxVoltage = voltage;
+	}
+
 	if (bateryPresent == false && voltage > 0.5)
 	{
 		bateryPresent = true;
 		// Update start clock time
 		start_time_milis = millis();
 	}
-	else if (bateryPresent == true && voltage  < 0.5 || bateryPresent == true && voltage  > 3 ) // Battery is not present or someone pulled out batt during charge
+	else if (bateryPresent == true && voltage  < 0.5 || bateryPresent == true && voltage  > 3) // Battery is not present or someone pulled out batt during charge
 	{
 		bateryPresent = false;
 	}
@@ -137,10 +144,11 @@ void loop()
 	{
 		if ((millis() - start_time_milis) > 10 * 60 * 60 * 1000 ||	// More than 10 hours elapsed
 			voltage > 2.9 ||										// Voltage more than 1.45V per cell
-			temperature > 45										// Temperature of cells more than 45°C
+			temperature > 45 ||										// Temperature of cells more than 45°C
+			(maxVoltage - voltage) > 0.030							// Ve have voltage drop of more than 0.030V (30mV)
 			)
 		{
-			Serial.println("End charging.");
+			Serial.println("End charging.                           ");
 			// End charging
 			digitalWrite(ChargePIN, LOW);
 			digitalWrite(FastChargePIN, LOW);
@@ -171,7 +179,7 @@ void loop()
 			}
 		}
 	}
-	else
+	else if (start_time_milis > 0)
 	{
 		Serial.println("End charging, battery not present.");
 		// No battery, end charging
@@ -181,4 +189,5 @@ void loop()
 
 	delay(1000);                                      // Delay a bit... 
 }
+
 

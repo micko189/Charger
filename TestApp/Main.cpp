@@ -59,8 +59,11 @@ void GotoXY(byte x, byte y)
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
+#define VoltageThreshold 591 // If 591 simulate overcharge voltage drop, if grater no overcharge simulation
+
 void main()
 {
+	bool notInOvercharge = true;
 	setup();
 	analogWrite(ThermistorPIN, 600);
 	analogWrite(VoltagePIN, 0);
@@ -73,7 +76,6 @@ void main()
 	{
 		printf("Seconds elapsed: %ds\n", cnt);
 		
-		
 		if (cnt >= 4)
 		{
 			analogWrite(VoltagePIN, startVol);
@@ -81,14 +83,25 @@ void main()
 
 		loop();
 
-		if (digitalRead(ChargePIN))
+		if (notInOvercharge && analogRead(VoltagePIN) <= VoltageThreshold) // Simulate voltage drop when overcharging
 		{
-			startVol++;
-		}
+			if (digitalRead(ChargePIN))
+			{
+				startVol++;
+			}
 
-		if (digitalRead(FastChargePIN))
+			if (digitalRead(FastChargePIN))
+			{
+				startVol++;
+			}
+		}
+		else
 		{
-			startVol++;
+			notInOvercharge = false;
+			if (digitalRead(ChargePIN))
+			{
+				startVol--;
+			}
 		}
 
 		printf("Bat pres: %d, charging: %d, fast: %d \n", bateryPresent, digitalRead(ChargePIN), digitalRead(FastChargePIN));
