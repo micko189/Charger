@@ -26,21 +26,19 @@
 
 #include <math.h>
 
+#define ChargePIN 1						// Digital Pin 1
+#define FastChargePIN 2					// Digital Pin 2
 #define ThermistorPIN 0                 // Analog Pin 0
-#define ChargePIN 1
-#define FastChargePIN 2
 #define VoltagePIN 3					// Analog Pin 3
 
 float pad = 9850;                       // balance/pad resistor value, set this to  the measured resistance of your pad resistor
 float thermr = 10000;                   // thermistor nominal resistance
 
 #define NUMSAMPLES 5
-
 int samples[NUMSAMPLES];
 
 #define NORMAL_CHARGE 0
 #define FAST_CHARGE 1
-
 byte chargingMode = FAST_CHARGE;
 
 bool bateryPresent = false;
@@ -50,40 +48,22 @@ float maxVoltage = 0;
 unsigned long start_time_milis = 0;
 unsigned long elapsed_time_milis = 0;
 
-float Thermistor(float RawADC) {
-	long Resistance;
-	float Temp;  // Dual-Purpose variable to save space.
-
-	Resistance = pad * ((1023.0 / RawADC) - 1);
-	Temp = log((float)Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
-	Temp = 1 / (0.001129148 + (0.000234125 * Temp) + (0.0000000876741 * Temp * Temp * Temp));
-	Temp = Temp - 273.15;  // Convert Kelvin to Celsius                      
-
-	// BEGIN- Remove these lines for the function not to display anything
-	//Serial.print("ADC: "); 
-	//Serial.print(RawADC); 
-	//Serial.print(", pad: ");
-	//Serial.print(pad/1000,3);
-	//Serial.print(" Kohms, Volts: "); 
-	//Serial.print(((RawADC*vcc)/1024.0),3);   
-	//Serial.print(", Resistance: "); 
-	//Serial.print(Resistance);
-	//Serial.print(" ohms, ");
-	// END- Remove these lines for the function not to display anything
-
-	return Temp;                                      // Return the Temperature
-}
-
 void setup()
 {
 	Serial.begin(9600);
 	pinMode(ChargePIN, OUTPUT);
 	pinMode(FastChargePIN, OUTPUT);
-
+	 
+	// Set both charging pins to LOW
 	digitalWrite(ChargePIN, LOW);
 	digitalWrite(FastChargePIN, LOW);
 }
 
+/// <summary>
+/// Read analog value 5 times and retuns average.
+/// </summary>
+/// <param name="pin">The pin.</param>
+/// <returns>Averafe analog raw value</returns>
 float analogReadAvg(uint8_t pin)
 {
 	uint8_t i;
@@ -95,7 +75,7 @@ float analogReadAvg(uint8_t pin)
 		if (i != NUMSAMPLES - 1)
 		{
 			delay(10);
-		}	
+		}
 	}
 
 	// average all the samples out
@@ -109,6 +89,28 @@ float analogReadAvg(uint8_t pin)
 	return average;
 }
 
+/// <summary>
+/// Calculates temperature from raw analog value.
+/// </summary>
+/// <param name="RawADC">The raw analog value.</param>
+/// <returns></returns>
+float Thermistor(float RawADC) {
+	long Resistance;
+	float Temp;  // Dual-Purpose variable to save space.
+
+	Resistance = pad * ((1023.0 / RawADC) - 1);
+	Temp = log((float)Resistance); // Saving the Log(resistance) so not to calculate  it 4 times later
+	Temp = 1 / (0.001129148 + (0.000234125 * Temp) + (0.0000000876741 * Temp * Temp * Temp));
+	Temp = Temp - 273.15;  // Convert Kelvin to Celsius                      
+
+	return Temp;	// Return the Temperature
+}
+
+/// <summary>
+/// Calculates voltage from raw analog value.
+/// </summary>
+/// <param name="RawADC">The raw analog value.</param>
+/// <returns></returns>
 float Voltage(float RawADC)
 {
 	return RawADC * (5.0 / 1023.0);
@@ -140,17 +142,19 @@ void loop()
 		start_time_milis = millis();
 	}
 	else if ((bateryPresent == true && voltage  < 0.5) ||	// Battery is not present
-		(bateryPresent == true && voltage  > 3))		// Someone pulled out batt during charge
+		(bateryPresent == true && voltage  > 3))			// Someone pulled out batt during charge
 	{
 		bateryPresent = false;
 	}
 
 	if (bateryPresent)
 	{
-		if ((elapsed_time_milis = (millis() - start_time_milis)) > 10 * 60 * 60 * 1000 ||	// More than 10 hours elapsed
-			voltage > 2.9 ||										// Voltage more than 1.45V per cell
-			temperature > 45.0 ||										// Temperature of cells more than 45°C
-			(maxVoltage - voltage) > 0.030							// Ve have voltage drop of more than 0.030V (30mV)
+		elapsed_time_milis = (millis() - start_time_milis);
+
+		if (elapsed_time_milis > 10 * 60 * 60 * 1000 ||	// More than 10 hours elapsed
+			voltage > 2.9 ||							// Voltage more than 1.45V per cell
+			temperature > 45.0 ||						// Temperature of cells more than 45°C
+			(maxVoltage - voltage) > 0.030				// Ve have voltage drop of more than 0.030V (30mV)
 			)
 		{
 			int msec = elapsed_time_milis % 1000;
@@ -204,5 +208,5 @@ void loop()
 		digitalWrite(FastChargePIN, LOW);
 	}
 
-	delay(1000);                                      // Delay a bit... 
+	delay(1000);	// Delay a bit... 
 }
