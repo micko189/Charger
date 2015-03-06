@@ -19,6 +19,12 @@ public:
 	{
 		printf("%c", c);
 	}
+	void print(int d, int i)
+	{
+		char format[] = "%. d";
+		format[2] = i + 48;
+		printf(format, d);
+	}
 	void print(float f, int i)
 	{
 		char format[] = "%. f";

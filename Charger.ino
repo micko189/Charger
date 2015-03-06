@@ -48,6 +48,7 @@ bool bateryPresent = false;
 float maxVoltage = 0;
 
 unsigned long start_time_milis = 0;
+unsigned long elapsed_time_milis = 0;
 
 float Thermistor(float RawADC) {
 	long Resistance;
@@ -91,7 +92,10 @@ float analogReadAvg(uint8_t pin)
 	// take N samples in a row, with a slight delay
 	for (i = 0; i < NUMSAMPLES; i++) {
 		samples[i] = analogRead(pin);
-		delay(10);
+		if (i != NUMSAMPLES - 1)
+		{
+			delay(10);
+		}	
 	}
 
 	// average all the samples out
@@ -135,21 +139,33 @@ void loop()
 		// Update start clock time
 		start_time_milis = millis();
 	}
-	else if (bateryPresent == true && voltage  < 0.5 ||	// Battery is not present
-			bateryPresent == true && voltage  > 3)		// Someone pulled out batt during charge
+	else if ((bateryPresent == true && voltage  < 0.5) ||	// Battery is not present
+		(bateryPresent == true && voltage  > 3))		// Someone pulled out batt during charge
 	{
 		bateryPresent = false;
 	}
 
 	if (bateryPresent)
 	{
-		if ((millis() - start_time_milis) > 10 * 60 * 60 * 1000 ||	// More than 10 hours elapsed
+		if ((elapsed_time_milis = (millis() - start_time_milis)) > 10 * 60 * 60 * 1000 ||	// More than 10 hours elapsed
 			voltage > 2.9 ||										// Voltage more than 1.45V per cell
-			temperature > 45 ||										// Temperature of cells more than 45°C
+			temperature > 45.0 ||										// Temperature of cells more than 45°C
 			(maxVoltage - voltage) > 0.030							// Ve have voltage drop of more than 0.030V (30mV)
 			)
 		{
-			Serial.println("End charging.                           ");
+			int msec = elapsed_time_milis % 1000;
+			int sec = (elapsed_time_milis / 1000) % 60;
+			int min = ((elapsed_time_milis / 1000) / 60) % 60;
+			int hour = (((elapsed_time_milis / 1000) / 60) / 60) % 60;
+			Serial.print("End charging, charging time: ");
+			Serial.print(hour, 1);
+			Serial.print(':');
+			Serial.print(min, 2);
+			Serial.print(':');
+			Serial.print(sec, 2);
+			Serial.print(':');
+			Serial.print(msec, 3);
+			Serial.println("");
 			// End charging
 			digitalWrite(ChargePIN, LOW);
 			digitalWrite(FastChargePIN, LOW);
