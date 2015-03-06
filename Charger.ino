@@ -124,7 +124,7 @@ void loop()
 	Serial.print(voltage, 3);                             // display Celsius
 	Serial.println("V");
 
-	if (voltage > maxVoltage )
+	if (voltage > maxVoltage)
 	{
 		maxVoltage = voltage;
 	}
@@ -135,7 +135,8 @@ void loop()
 		// Update start clock time
 		start_time_milis = millis();
 	}
-	else if (bateryPresent == true && voltage  < 0.5 || bateryPresent == true && voltage  > 3) // Battery is not present or someone pulled out batt during charge
+	else if (bateryPresent == true && voltage  < 0.5 ||	// Battery is not present
+			bateryPresent == true && voltage  > 3)		// Someone pulled out batt during charge
 	{
 		bateryPresent = false;
 	}
@@ -189,5 +190,3 @@ void loop()
 
 	delay(1000);                                      // Delay a bit... 
 }
-
-
