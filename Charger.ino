@@ -38,14 +38,14 @@ float thermr = 10000;                   // thermistor nominal resistance
 
 int samples[NUMSAMPLES];
 
-#define FAST_CHARGE 0
-#define NORMAL_CHARGE 1
+#define NORMAL_CHARGE 0
+#define FAST_CHARGE 1
 
 byte chargingMode = FAST_CHARGE;
 
 bool bateryPresent = false;
 
-unsigned long current_time_milis;
+unsigned long start_time_milis;
 
 float Thermistor(float RawADC) {
 	long Resistance;
@@ -110,59 +110,73 @@ float Voltage(float RawADC)
 
 void loop()
 {
-	float temp = Thermistor(analogReadAvg(ThermistorPIN));      
+	float temperature = Thermistor(analogReadAvg(ThermistorPIN));      
 
 	Serial.print("Celsius: ");
-	Serial.print(temp, 2);                             // display Celsius
-	Serial.println("");
+	Serial.print(temperature, 2);                             // display Celsius
+	Serial.println("°C");
 
 	float voltage = Voltage(analogReadAvg(VoltagePIN));
 
 	Serial.print("Voltage: ");
-	Serial.print(voltage, 2);                             // display Celsius
-	Serial.println("");
+	Serial.print(voltage, 3);                             // display Celsius
+	Serial.println("V");
 
 	if (bateryPresent == false && voltage > 0.5)
 	{
 		bateryPresent = true;
-		// Update clock time
-		current_time_milis = millis();
+		// Update start clock time
+		start_time_milis = millis();
 	}
-	else if(bateryPresent == true && voltage  < 0.5)
+	else if (bateryPresent == true && voltage  < 0.5 || bateryPresent == true && voltage  > 3 ) // Battery is not present or someone pulled out batt during charge
 	{
 		bateryPresent = false;
 	}
 
 	if (bateryPresent)
 	{
-		if (voltage > 2.8)
+		if ((millis() - start_time_milis) > 10 * 60 * 60 * 1000 ||	// More than 10 hours elapsed
+			voltage > 2.9 ||										// Voltage more than 1.45V per cell
+			temperature > 45										// Temperature of cells more than 45°C
+			)
 		{
-			chargingMode = NORMAL_CHARGE;
-		}
-		else
-		{
-			chargingMode = FAST_CHARGE;
-		}
-
-		if (voltage < 2.9)
-		{
-			// begin charge
-			digitalWrite(ChargePIN, HIGH);
-		}
-		else
-		{
-			// done charging
+			Serial.println("End charging.");
+			// End charging
 			digitalWrite(ChargePIN, LOW);
-		}
-
-		if (chargingMode == FAST_CHARGE)
-		{
-			digitalWrite(FastChargePIN, HIGH);
-		}
-		else
-		{
 			digitalWrite(FastChargePIN, LOW);
 		}
+		else
+		{
+			// Begin charge
+			digitalWrite(ChargePIN, HIGH);
+
+			// If voltage is less than 1.4V per cell charge with C/5, if not charge with C/10
+			if (voltage > 2.8)
+			{
+				chargingMode = NORMAL_CHARGE;
+			}
+			else
+			{
+				chargingMode = FAST_CHARGE;
+			}
+
+			// Set fast charge pin
+			if (chargingMode == FAST_CHARGE)
+			{
+				digitalWrite(FastChargePIN, HIGH);
+			}
+			else
+			{
+				digitalWrite(FastChargePIN, LOW);
+			}
+		}
+	}
+	else
+	{
+		Serial.println("End charging, battery not present.");
+		// No battery, end charging
+		digitalWrite(ChargePIN, LOW);
+		digitalWrite(FastChargePIN, LOW);
 	}
 
 	delay(1000);                                      // Delay a bit... 
