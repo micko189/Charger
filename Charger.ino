@@ -24,7 +24,6 @@ float pad = 9850;                       // balance/pad resistor value, set this 
 float thermr = 10000;                   // thermistor nominal resistance
 
 #define NUMSAMPLES 5
-int samples[NUMSAMPLES];
 
 #define NORMAL_CHARGE 0
 #define FAST_CHARGE 1
@@ -58,11 +57,11 @@ void setup()
 float analogReadAvg(uint8_t pin)
 {
 	uint8_t i;
-	float average;
+	float average = 0;
 
 	// take N samples in a row, with a slight delay
 	for (i = 0; i < NUMSAMPLES; i++) {
-		samples[i] = analogRead(pin);
+		average += analogRead(pin);
 		if (i != NUMSAMPLES - 1)
 		{
 			delay(10);
@@ -70,11 +69,6 @@ float analogReadAvg(uint8_t pin)
 	}
 
 	// average all the samples out
-	average = 0;
-	for (i = 0; i < NUMSAMPLES; i++) {
-		average += samples[i];
-	}
-
 	average /= NUMSAMPLES;
 
 	return average;
@@ -123,6 +117,7 @@ void loop()
 
 	if (voltage > maxVoltage)
 	{
+		// Set max voltage for later use
 		maxVoltage = voltage;
 	}
 
