@@ -64,7 +64,7 @@ float analogReadAvg(uint8_t pin)
 		average += analogRead(pin);
 		if (i != NUMSAMPLES - 1)
 		{
-			delay(10);
+			delay(10); // Delay a bit between analog reed
 		}
 	}
 

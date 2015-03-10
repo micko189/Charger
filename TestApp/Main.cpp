@@ -65,12 +65,14 @@ void main()
 {
 	bool notInOvercharge = true;
 	setup();
-	analogWrite(ThermistorPIN, 600);
+	analogWrite(ThermistorPIN, 0);
 	analogWrite(VoltagePIN, 0);
 
 	int cnt = 0;
 
 	int startVol = 500;
+	int startTmp = 620;
+
 
 	for (;;)
 	{
@@ -81,6 +83,8 @@ void main()
 			analogWrite(VoltagePIN, startVol);
 		}
 
+		analogWrite(ThermistorPIN, startTmp);
+
 		loop();
 
 		if (notInOvercharge && analogRead(VoltagePIN) <= VoltageThreshold) // Simulate voltage drop when overcharging
@@ -88,11 +92,13 @@ void main()
 			if (digitalRead(ChargePIN))
 			{
 				startVol++;
+				startTmp++;
 			}
 
 			if (digitalRead(FastChargePIN))
 			{
 				startVol++;
+				startTmp++;
 			}
 		}
 		else
@@ -101,6 +107,7 @@ void main()
 			if (digitalRead(ChargePIN))
 			{
 				startVol--;
+				startTmp++;
 			}
 		}
 
